@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student-Teacher Booking App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 80%; /* Could be more responsive */
+            max-width: 500px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-indigo-600 text-white p-4 shadow-md rounded-b-lg">
+        <div class="container flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-3xl font-bold mb-2 md:mb-0">Student~Teacher Management</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><button id="home-button" class="px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300">Home</button></li>
+                    <li><button id="logout-button" class="px-4 py-2 rounded-md bg-red-500 hover:bg-red-600 transition duration-300 hidden">Logout</button></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow container py-8">
+        <div id="user-id-display" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-6 hidden" role="alert">
+            <strong class="font-bold">Your User ID:</strong>
+            <span id="current-user-id" class="block sm:inline break-all"></span>
+        </div>
+
+        <section id="auth-area" class="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
+            <h2 class="text-3xl font-semibold text-center mb-6 text-gray-800">Welcome!</h2>
+
+            <div id="login-section">
+                <h3 class="text-2xl font-medium text-center mb-4 text-gray-700">Login</h3>
+                <form id="login-form" class="space-y-4">
+                    <input type="email" id="login-email" placeholder="Email" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="password" id="login-password" placeholder="Password" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                            class="w-full bg-indigo-600 text-white p-3 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
+                        Login
+                    </button>
+                </form>
+                <p class="text-center mt-4 text-gray-600">Don't have an account? <button type="button" id="show-register" class="text-indigo-600 hover:underline font-medium">Register here</button></p>
+            </div>
+
+            <div id="register-section" class="hidden">
+                <h3 class="text-2xl font-medium text-center mb-4 text-gray-700">Register</h3>
+                <form id="register-form" class="space-y-4">
+                    <input type="text" id="register-name" placeholder="Name" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="email" id="register-email" placeholder="Email" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="password" id="register-password" placeholder="Password" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <select id="register-role" class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        </select>
+                    <button type="submit"
+                            class="w-full bg-green-600 text-white p-3 rounded-md hover:bg-green-700 transition duration-300 shadow-md">
+                        Register
+                    </button>
+                </form>
+                <p class="text-center mt-4 text-gray-600">Already have an account? <button type="button" id="show-login" class="text-indigo-600 hover:underline font-medium">Login here</button></p>
+            </div>
+        </section>
+
+        <section id="admin-area" class="bg-white p-8 rounded-lg shadow-lg hidden">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6">Admin Dashboard</h2>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Add Teacher</h3>
+                <form id="add-teacher-form" class="space-y-4">
+                    <input type="text" id="add-teacher-name" placeholder="Teacher Name" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="email" id="add-teacher-email" placeholder="Teacher Email" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="add-teacher-department" placeholder="Department" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="add-teacher-subject" placeholder="Subject" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                            class="w-full bg-indigo-600 text-white p-3 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
+                        Add Teacher
+                    </button>
+                </form>
+            </div>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Manage Teachers</h3>
+                <select id="manage-teacher-select" class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 mb-4">
+                    <option value="">Select Teacher to Update/Delete</option>
+                </select>
+
+                <form id="update-teacher-form" class="space-y-4 mb-4 hidden">
+                    <input type="text" id="update-teacher-name" placeholder="New Name"
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="update-teacher-department" placeholder="New Department"
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="update-teacher-subject" placeholder="New Subject"
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition duration-300 shadow-md">
+                        Update Teacher
+                    </button>
+                </form>
+
+                <button id="delete-teacher-button"
+                        class="w-full bg-red-600 text-white p-3 rounded-md hover:bg-red-700 transition duration-300 shadow-md hidden">
+                    Delete Teacher
+                </button>
+            </div>
+
+            <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Approve Student Registrations</h3>
+                <div id="student-registrations-list" class="space-y-3">
+                    <p class="text-gray-500">No pending student registrations.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="teacher-area" class="bg-white p-8 rounded-lg shadow-lg hidden">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6">Teacher Dashboard</h2>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Schedule New Appointment Slot</h3>
+                <form id="schedule-appointment-form" class="space-y-4">
+                    <input type="datetime-local" id="appointment-datetime" required
+                           class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                            class="w-full bg-indigo-600 text-white p-3 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
+                        Schedule Slot
+                    </button>
+                </form>
+            </div>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Pending Appointment Requests</h3>
+                <div id="pending-appointment-requests" class="space-y-3">
+                    <p class="text-gray-500">No pending appointment requests.</p>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">All Scheduled Appointments</h3>
+                <div id="teacher-all-appointments" class="space-y-3">
+                    <p class="text-gray-500">No appointments scheduled yet.</p>
+                </div>
+            </div>
+
+            <div class="mt-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Messages from Students</h3>
+                <div id="teacher-messages-list" class="space-y-3">
+                    <p class="text-gray-500">No messages.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="student-area" class="bg-white p-8 rounded-lg shadow-lg hidden">
+            <h2 class="text-3xl font-semibold text-gray-800 mb-6">Student Dashboard</h2>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Search Teacher</h3>
+                <form id="search-teacher-form" class="flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="search-teacher-input" placeholder="Search by Name, Subject, or Department"
+                           class="flex-grow p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                            class="bg-indigo-600 text-white p-3 rounded-md hover:bg-indigo-700 transition duration-300 shadow-md">
+                        Search
+                    </button>
+                </form>
+                <div id="search-results" class="mt-4 space-y-3">
+                    <p class="text-gray-500">Search for teachers to find available slots.</p>
+                </div>
+            </div>
+
+            <div class="mb-8 p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Book Appointment</h3>
+                <form id="book-appointment-form" class="space-y-4">
+                    <select id="book-teacher-select" class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Select Teacher</option>
+                        </select>
+                    <select id="available-slots-select" class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Select Available Slot</option>
+                        </select>
+                    <textarea id="appointment-purpose" placeholder="Purpose of Appointment (e.g., 'Discuss project proposal')"
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 h-24"></textarea>
+                    <button type="submit"
+                            class="w-full bg-green-600 text-white p-3 rounded-md hover:bg-green-700 transition duration-300 shadow-md">
+                        Book Appointment
+                    </button>
+                </form>
+            </div>
+
+            <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-medium text-gray-700 mb-4">Send Message to Teacher</h3>
+                <form id="send-message-form" class="space-y-4">
+                    <select id="message-recipient-select" class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Select Teacher</option>
+                        </select>
+                    <textarea id="message-content" placeholder="Your message..."
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 h-24"></textarea>
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition duration-300 shadow-md">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white p-4 text-center rounded-t-lg mt-8">
+        <p>&copy; 2025 Unified Mentor. All rights reserved.</p>
+    </footer>
+
+    <div id="custom-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modal-message" class="text-lg mb-4"></p>
+            <div id="modal-buttons" class="flex justify-center space-x-4">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Firebase Initialization
+        let app;
+        let db;
+        let auth;
+        let currentUserId = null; // To store the current user's ID
+        let currentUserRole = null; // To store the current user's role
+        let isAuthReady = false; // Flag to indicate if auth state is ready
+
+        // Function to display custom modal
+        function showCustomModal(message, type = 'alert', onConfirm = null) {
+            const modal = document.getElementById('custom-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalButtons = document.getElementById('modal-buttons');
+            const closeButton = modal.querySelector('.close-button');
+
+            modalMessage.textContent = message;
+            modalButtons.innerHTML = ''; // Clear previous buttons
+
+            if (type === 'alert') {
+                const okButton = document.createElement('button');
+                okButton.textContent = 'OK';
+                okButton.className = 'bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300';
+                okButton.onclick = () => modal.style.display = 'none';
+                modalButtons.appendChild(okButton);
+            } else if (type === 'confirm') {
+                const confirmBtn = document.createElement('button');
+                confirmBtn.textContent = 'Confirm';
+                confirmBtn.className = 'bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition duration-300';
+                confirmBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    if (onConfirm) onConfirm(true);
+                };
+                modalButtons.appendChild(confirmBtn);
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.className = 'bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition duration-300';
+                cancelBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    if (onConfirm) onConfirm(false);
+                };
+                modalButtons.appendChild(cancelBtn);
+            }
+
+            closeButton.onclick = () => modal.style.display = 'none';
+            modal.style.display = 'flex'; // Use flex to center
+        }
+
+        // Logging function
+        function logAction(action, details = {}) {
+            console.log(`[LOG] Action: ${action}`, details);
+            // In a real application, you'd send this to a logging service or Firestore
+            // For example:
+            // addDoc(collection(db, `artifacts/${appId}/logs`), {
+            //     timestamp: new Date(),
+            //     userId: currentUserId,
+            //     action: action,
+            //     details: details
+            // }).catch(e => console.error("Error logging action:", e));
+        }
+
+        // Function to update UI based on user role
+        function updateUI(user) {
+            const authArea = document.getElementById('auth-area');
+            const adminArea = document.getElementById('admin-area');
+            const teacherArea = document.getElementById('teacher-area');
+            const studentArea = document.getElementById('student-area');
+            const logoutButton = document.getElementById('logout-button');
+            const userIdDisplay = document.getElementById('user-id-display');
+            const currentUserIdSpan = document.getElementById('current-user-id');
+
+            // Hide all sections initially
+            authArea.classList.add('hidden');
+            adminArea.classList.add('hidden');
+            teacherArea.classList.add('hidden');
+            studentArea.classList.add('hidden');
+            logoutButton.classList.add('hidden');
+            userIdDisplay.classList.add('hidden');
+
+            if (user) {
+                currentUserId = user.uid;
+                currentUserIdSpan.textContent = user.uid;
+                userIdDisplay.classList.remove('hidden');
+                logoutButton.classList.remove('hidden');
+
+                // Fetch user role from Firestore
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/profile/data`);
+                getDoc(userDocRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        currentUserRole = docSnap.data().role;
+                        logAction('User logged in', { userId: user.uid, role: currentUserRole });
+                        if (currentUserRole === 'admin') {
+                            adminArea.classList.remove('hidden');
+                            loadTeachersForAdmin();
+                            loadPendingStudentRegistrations();
+                        } else if (currentUserRole === 'teacher') {
+                            teacherArea.classList.remove('hidden');
+                            loadTeacherAppointments();
+                            loadPendingAppointmentRequests();
+                            loadTeacherMessages();
+                        } else if (currentUserRole === 'student') {
+                            studentArea.classList.remove('hidden');
+                            loadTeachersForStudentBooking();
+                            loadTeachersForMessageSending();
+                        }
+                    } else {
+                        showCustomModal("User profile not found. Please contact support.");
+                        logAction('User profile not found', { userId: user.uid });
+                        signOut(auth); // Force sign out if profile is missing
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user role:", error);
+                    showCustomModal("Error loading user profile: " + error.message);
+                    logAction('Error fetching user role', { userId: user.uid, error: error.message });
+                });
+            } else {
+                // No user logged in, show authentication area
+                authArea.classList.remove('hidden');
+                logAction('User logged out or not authenticated');
+            }
+        }
+
+        // Initialize Firebase and set up auth listener
+        window.onload = async function () {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Firebase configuration is missing. Please ensure __firebase_config is provided.");
+                }
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign in with custom token if available, otherwise anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    logAction('Signed in with custom token');
+                } else {
+                    await signInAnonymously(auth);
+                    logAction('Signed in anonymously');
+                }
+
+                // Listen for authentication state changes
+                onAuthStateChanged(auth, (user) => {
+                    isAuthReady = true; // Auth state is now ready
+                    updateUI(user);
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showCustomModal("Failed to initialize Firebase: " + error.message);
+                logAction('Firebase initialization error', { error: error.message });
+            }
+        };
+
+        // --- Authentication Logic ---
+        document.getElementById('show-register').addEventListener('click', () => {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('register-section').classList.remove('hidden');
+        });
+
+        document.getElementById('show-login').addEventListener('click', () => {
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('register-section').classList.add('hidden');
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showCustomModal("Logged in successfully!");
+                logAction('User login', { email: email });
+            } catch (error) {
+                console.error("Login error:", error);
+                showCustomModal("Login failed: " + error.message);
+                logAction('Login failed', { email: email, error: error.message });
+            }
+        });
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const role = document.getElementById('register-role').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Store user profile in Firestore (private data)
+                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/profile/data`), {
+                    name: name,
+                    email: email,
+                    role: role, // 'student' or 'teacher'
+                    createdAt: new Date()
+                });
+
+                // If role is student, add to pending registrations for admin approval
+                if (role === 'student') {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/pendingRegistrations`), {
+                        userId: user.uid,
+                        name: name,
+                        email: email,
+                        status: 'pending',
+                        requestedAt: new Date()
+                    });
+                    showCustomModal("Registration successful! Your account is pending admin approval.");
+                    logAction('Student registration pending', { userId: user.uid, email: email });
+                } else {
+                    showCustomModal("Registration successful! You can now log in.");
+                    logAction('Teacher registration successful', { userId: user.uid, email: email });
+                }
+
+                document.getElementById('register-form').reset();
+                document.getElementById('show-login').click(); // Switch back to login
+            } catch (error) {
+                console.error("Registration error:", error);
+                showCustomModal("Registration failed: " + error.message);
+                logAction('Registration failed', { email: email, error: error.message });
+            }
+        });
+
+        document.getElementById('logout-button').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showCustomModal("Logged out successfully!");
+                logAction('User logout', { userId: currentUserId });
+                // UI will be updated by onAuthStateChanged listener
+            } catch (error) {
+                console.error("Logout error:", error);
+                showCustomModal("Logout failed: " + error.message);
+                logAction('Logout failed', { userId: currentUserId, error: error.message });
+            }
+        });
+
+        // --- Admin Logic ---
+        document.getElementById('add-teacher-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'admin') { showCustomModal("Not authorized."); return; }
+
+            const name = document.getElementById('add-teacher-name').value;
+            const email = document.getElementById('add-teacher-email').value;
+            const department = document.getElementById('add-teacher-department').value;
+            const subject = document.getElementById('add-teacher-subject').value;
+
+            try {
+                // Add teacher to public teachers collection
+                await addDoc(collection(db, `artifacts/${appId}/public/data/teachers`), {
+                    name: name,
+                    email: email,
+                    department: department,
+                    subject: subject,
+                    createdAt: new Date()
+                });
+                showCustomModal("Teacher added successfully!");
+                document.getElementById('add-teacher-form').reset();
+                logAction('Admin added teacher', { name: name, email: email });
+            } catch (error) {
+                console.error("Error adding teacher:", error);
+                showCustomModal("Failed to add teacher: " + error.message);
+                logAction('Admin failed to add teacher', { name: name, error: error.message });
+            }
+        });
+
+        // Load teachers for update/delete dropdown
+        function loadTeachersForAdmin() {
+            if (!isAuthReady || currentUserRole !== 'admin') return;
+
+            const select = document.getElementById('manage-teacher-select');
+            select.innerHTML = '<option value="">Select Teacher to Update/Delete</option>';
+            const teachersRef = collection(db, `artifacts/${appId}/public/data/teachers`);
+
+            onSnapshot(teachersRef, (snapshot) => {
+                const teachers = [];
+                snapshot.forEach(doc => {
+                    teachers.push({ id: doc.id, ...doc.data() });
+                });
+                // Sort teachers by name
+                teachers.sort((a, b) => a.name.localeCompare(b.name));
+
+                select.innerHTML = '<option value="">Select Teacher to Update/Delete</option>'; // Clear existing options
+                teachers.forEach(teacher => {
+                    const option = document.createElement('option');
+                    option.value = teacher.id;
+                    option.textContent = `${teacher.name} (${teacher.subject})`;
+                    select.appendChild(option);
+                });
+                logAction('Admin teachers loaded for management', { count: teachers.length });
+            }, (error) => {
+                console.error("Error loading teachers for admin:", error);
+                showCustomModal("Error loading teachers: " + error.message);
+                logAction('Error loading teachers for admin', { error: error.message });
+            });
+        }
+
+        document.getElementById('manage-teacher-select').addEventListener('change', (e) => {
+            const teacherId = e.target.value;
+            const updateForm = document.getElementById('update-teacher-form');
+            const deleteButton = document.getElementById('delete-teacher-button');
+
+            if (teacherId) {
+                updateForm.classList.remove('hidden');
+                deleteButton.classList.remove('hidden');
+                // Populate update form with current teacher data (optional, fetch doc if needed)
+                const teacherRef = doc(db, `artifacts/${appId}/public/data/teachers`, teacherId);
+                getDoc(teacherRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        const teacherData = docSnap.data();
+                        document.getElementById('update-teacher-name').value = teacherData.name || '';
+                        document.getElementById('update-teacher-department').value = teacherData.department || '';
+                        document.getElementById('update-teacher-subject').value = teacherData.subject || '';
+                    }
+                }).catch(error => {
+                    console.error("Error fetching teacher for update:", error);
+                    logAction('Error fetching teacher for update', { teacherId: teacherId, error: error.message });
+                });
+            } else {
+                updateForm.classList.add('hidden');
+                deleteButton.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('update-teacher-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'admin') { showCustomModal("Not authorized."); return; }
+
+            const teacherId = document.getElementById('manage-teacher-select').value;
+            if (!teacherId) { showCustomModal("Please select a teacher to update."); return; }
+
+            const newName = document.getElementById('update-teacher-name').value;
+            const newDepartment = document.getElementById('update-teacher-department').value;
+            const newSubject = document.getElementById('update-teacher-subject').value;
+
+            try {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/teachers`, teacherId), {
+                    name: newName,
+                    department: newDepartment,
+                    subject: newSubject,
+                    updatedAt: new Date()
+                });
+                showCustomModal("Teacher updated successfully!");
+                document.getElementById('update-teacher-form').reset();
+                document.getElementById('manage-teacher-select').value = ''; // Reset dropdown
+                document.getElementById('update-teacher-form').classList.add('hidden');
+                document.getElementById('delete-teacher-button').classList.add('hidden');
+                logAction('Admin updated teacher', { teacherId: teacherId, newName: newName });
+            } catch (error) {
+                console.error("Error updating teacher:", error);
+                showCustomModal("Failed to update teacher: " + error.message);
+                logAction('Admin failed to update teacher', { teacherId: teacherId, error: error.message });
+            }
+        });
+
+        document.getElementById('delete-teacher-button').addEventListener('click', () => {
+            if (!isAuthReady || currentUserRole !== 'admin') { showCustomModal("Not authorized."); return; }
+
+            const teacherId = document.getElementById('manage-teacher-select').value;
+            if (!teacherId) { showCustomModal("Please select a teacher to delete."); return; }
+
+            showCustomModal("Are you sure you want to delete this teacher?", 'confirm', async (result) => {
+                if (result) {
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/teachers`, teacherId));
+                        showCustomModal("Teacher deleted successfully!");
+                        document.getElementById('manage-teacher-select').value = ''; // Reset dropdown
+                        document.getElementById('update-teacher-form').classList.add('hidden');
+                        document.getElementById('delete-teacher-button').classList.add('hidden');
+                        logAction('Admin deleted teacher', { teacherId: teacherId });
+                    } catch (error) {
+                        console.error("Error deleting teacher:", error);
+                        showCustomModal("Failed to delete teacher: " + error.message);
+                        logAction('Admin failed to delete teacher', { teacherId: teacherId, error: error.message });
+                    }
+                }
+            });
+        });
+
+        // Load pending student registrations
+        function loadPendingStudentRegistrations() {
+            if (!isAuthReady || currentUserRole !== 'admin') return;
+
+            const registrationsList = document.getElementById('student-registrations-list');
+            const q = query(collection(db, `artifacts/${appId}/public/data/pendingRegistrations`), where("status", "==", "pending"));
+
+            onSnapshot(q, (snapshot) => {
+                registrationsList.innerHTML = ''; // Clear existing list
+                if (snapshot.empty) {
+                    registrationsList.innerHTML = '<p class="text-gray-500">No pending student registrations.</p>';
+                    return;
+                }
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const registrationId = docSnap.id;
+                    const registrationDiv = document.createElement('div');
+                    registrationDiv.className = 'flex items-center justify-between p-3 bg-white rounded-md shadow-sm border border-gray-200';
+                    registrationDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${data.name} (${data.email})</p>
+                            <p class="text-sm text-gray-600">Requested: ${new Date(data.requestedAt.toDate()).toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <button data-id="${registrationId}" data-userid="${data.userId}" class="approve-student-btn bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 mr-2">Approve</button>
+                            <button data-id="${registrationId}" class="reject-student-btn bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Reject</button>
+                        </div>
+                    `;
+                    registrationsList.appendChild(registrationDiv);
+                });
+                logAction('Admin pending registrations loaded', { count: snapshot.size });
+            }, (error) => {
+                console.error("Error loading pending registrations:", error);
+                showCustomModal("Error loading pending registrations: " + error.message);
+                logAction('Error loading pending registrations', { error: error.message });
+            });
+        }
+
+        document.getElementById('student-registrations-list').addEventListener('click', async (e) => {
+            if (!isAuthReady || currentUserRole !== 'admin') { showCustomModal("Not authorized."); return; }
+
+            if (e.target.classList.contains('approve-student-btn')) {
+                const registrationId = e.target.dataset.id;
+                const userIdToApprove = e.target.dataset.userid;
+                showCustomModal("Approve this student registration?", 'confirm', async (result) => {
+                    if (result) {
+                        try {
+                            // Update pending registration status
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/pendingRegistrations`, registrationId), {
+                                status: 'approved',
+                                approvedAt: new Date()
+                            });
+                            // Update the user's profile to mark them as active (if needed, or simply their role is already set)
+                            // For now, their role is set upon registration. This step just approves the *pending* status.
+                            showCustomModal("Student approved successfully!");
+                            logAction('Admin approved student', { registrationId: registrationId, userId: userIdToApprove });
+                        } catch (error) {
+                            console.error("Error approving student:", error);
+                            showCustomModal("Failed to approve student: " + error.message);
+                            logAction('Admin failed to approve student', { registrationId: registrationId, userId: userIdToApprove, error: error.message });
+                        }
+                    }
+                });
+            } else if (e.target.classList.contains('reject-student-btn')) {
+                const registrationId = e.target.dataset.id;
+                showCustomModal("Reject this student registration?", 'confirm', async (result) => {
+                    if (result) {
+                        try {
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/pendingRegistrations`, registrationId), {
+                                status: 'rejected',
+                                rejectedAt: new Date()
+                            });
+                            showCustomModal("Student registration rejected.");
+                            logAction('Admin rejected student', { registrationId: registrationId });
+                        } catch (error) {
+                            console.error("Error rejecting student:", error);
+                            showCustomModal("Failed to reject student: " + error.message);
+                            logAction('Admin failed to reject student', { registrationId: registrationId, error: error.message });
+                        }
+                    }
+                });
+            }
+        });
+
+        // --- Teacher Logic ---
+        document.getElementById('schedule-appointment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'teacher') { showCustomModal("Not authorized."); return; }
+
+            const datetime = document.getElementById('appointment-datetime').value;
+            if (!datetime) { showCustomModal("Please select a date and time."); return; }
+
+            try {
+                // Add appointment slot to public appointments collection
+                await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), {
+                    teacherId: currentUserId,
+                    teacherName: auth.currentUser.displayName || auth.currentUser.email, // Use display name or email
+                    dateTime: new Date(datetime),
+                    status: 'available', // 'available', 'pending', 'booked', 'cancelled'
+                    bookedBy: null,
+                    purpose: null,
+                    createdAt: new Date()
+                });
+                showCustomModal("Appointment slot scheduled successfully!");
+                document.getElementById('schedule-appointment-form').reset();
+                logAction('Teacher scheduled appointment slot', { teacherId: currentUserId, dateTime: datetime });
+            } catch (error) {
+                console.error("Error scheduling appointment:", error);
+                showCustomModal("Failed to schedule appointment: " + error.message);
+                logAction('Teacher failed to schedule appointment slot', { teacherId: currentUserId, error: error.message });
+            }
+        });
+
+        // Load pending appointment requests for teacher
+        function loadPendingAppointmentRequests() {
+            if (!isAuthReady || currentUserRole !== 'teacher') return;
+
+            const requestsList = document.getElementById('pending-appointment-requests');
+            const q = query(collection(db, `artifacts/${appId}/public/data/appointments`),
+                            where("teacherId", "==", currentUserId),
+                            where("status", "==", "pending"));
+
+            onSnapshot(q, (snapshot) => {
+                requestsList.innerHTML = ''; // Clear existing list
+                if (snapshot.empty) {
+                    requestsList.innerHTML = '<p class="text-gray-500">No pending appointment requests.</p>';
+                    return;
+                }
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const appointmentId = docSnap.id;
+                    const requestDiv = document.createElement('div');
+                    requestDiv.className = 'flex items-center justify-between p-3 bg-white rounded-md shadow-sm border border-gray-200';
+                    requestDiv.innerHTML = `
+                        <div>
+                            <p class="font-semibold">Student: ${data.bookedByStudentName || 'N/A'}</p>
+                            <p class="text-sm text-gray-600">Date/Time: ${new Date(data.dateTime.toDate()).toLocaleString()}</p>
+                            <p class="text-sm text-gray-600">Purpose: ${data.purpose || 'No purpose provided'}</p>
+                        </div>
+                        <div>
+                            <button data-id="${appointmentId}" class="approve-appointment-btn bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 mr-2">Approve</button>
+                            <button data-id="${appointmentId}" class="cancel-appointment-btn bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Cancel</button>
+                        </div>
+                    `;
+                    requestsList.appendChild(requestDiv);
+                });
+                logAction('Teacher pending appointment requests loaded', { teacherId: currentUserId, count: snapshot.size });
+            }, (error) => {
+                console.error("Error loading pending appointment requests:", error);
+                showCustomModal("Error loading requests: " + error.message);
+                logAction('Error loading pending appointment requests', { teacherId: currentUserId, error: error.message });
+            });
+        }
+
+        document.getElementById('pending-appointment-requests').addEventListener('click', async (e) => {
+            if (!isAuthReady || currentUserRole !== 'teacher') { showCustomModal("Not authorized."); return; }
+
+            if (e.target.classList.contains('approve-appointment-btn')) {
+                const appointmentId = e.target.dataset.id;
+                showCustomModal("Approve this appointment?", 'confirm', async (result) => {
+                    if (result) {
+                        try {
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/appointments`, appointmentId), {
+                                status: 'booked',
+                                approvedAt: new Date()
+                            });
+                            showCustomModal("Appointment approved successfully!");
+                            logAction('Teacher approved appointment', { appointmentId: appointmentId, teacherId: currentUserId });
+                        } catch (error) {
+                            console.error("Error approving appointment:", error);
+                            showCustomModal("Failed to approve appointment: " + error.message);
+                            logAction('Teacher failed to approve appointment', { appointmentId: appointmentId, error: error.message });
+                        }
+                    }
+                });
+            } else if (e.target.classList.contains('cancel-appointment-btn')) {
+                const appointmentId = e.target.dataset.id;
+                showCustomModal("Cancel this appointment?", 'confirm', async (result) => {
+                    if (result) {
+                        try {
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/appointments`, appointmentId), {
+                                status: 'cancelled',
+                                cancelledBy: currentUserId,
+                                cancelledAt: new Date()
+                            });
+                            showCustomModal("Appointment cancelled.");
+                            logAction('Teacher cancelled appointment', { appointmentId: appointmentId, teacherId: currentUserId });
+                        } catch (error) {
+                            console.error("Error cancelling appointment:", error);
+                            showCustomModal("Failed to cancel appointment: " + error.message);
+                            logAction('Teacher failed to cancel appointment', { appointmentId: appointmentId, error: error.message });
+                        }
+                    }
+                });
+            }
+        });
+
+        // Load all appointments for teacher (booked, available, cancelled)
+        function loadTeacherAppointments() {
+            if (!isAuthReady || currentUserRole !== 'teacher') return;
+
+            const appointmentsList = document.getElementById('teacher-all-appointments');
+            const q = query(collection(db, `artifacts/${appId}/public/data/appointments`),
+                            where("teacherId", "==", currentUserId));
+
+            onSnapshot(q, (snapshot) => {
+                appointmentsList.innerHTML = ''; // Clear existing list
+                if (snapshot.empty) {
+                    appointmentsList.innerHTML = '<p class="text-gray-500">No appointments scheduled yet.</p>';
+                    return;
+                }
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const appointmentDiv = document.createElement('div');
+                    appointmentDiv.className = 'p-3 bg-white rounded-md shadow-sm border border-gray-200';
+                    appointmentDiv.innerHTML = `
+                        <p class="font-semibold">Date/Time: ${new Date(data.dateTime.toDate()).toLocaleString()}</p>
+                        <p class="text-sm text-gray-600">Status: <span class="font-medium ${data.status === 'booked' ? 'text-green-600' : data.status === 'pending' ? 'text-yellow-600' : 'text-gray-600'}">${data.status.toUpperCase()}</span></p>
+                        ${data.bookedBy ? `<p class="text-sm text-gray-600">Booked By: ${data.bookedByStudentName || 'N/A'}</p>` : ''}
+                        ${data.purpose ? `<p class="text-sm text-gray-600">Purpose: ${data.purpose}</p>` : ''}
+                    `;
+                    appointmentsList.appendChild(appointmentDiv);
+                });
+                logAction('Teacher all appointments loaded', { teacherId: currentUserId, count: snapshot.size });
+            }, (error) => {
+                console.error("Error loading teacher's appointments:", error);
+                showCustomModal("Error loading your appointments: " + error.message);
+                logAction('Error loading teacher all appointments', { teacherId: currentUserId, error: error.message });
+            });
+        }
+
+        // Load messages for teacher
+        function loadTeacherMessages() {
+            if (!isAuthReady || currentUserRole !== 'teacher') return;
+
+            const messagesList = document.getElementById('teacher-messages-list');
+            const q = query(collection(db, `artifacts/${appId}/public/data/messages`),
+                            where("recipientId", "==", currentUserId));
+
+            onSnapshot(q, (snapshot) => {
+                messagesList.innerHTML = ''; // Clear existing list
+                if (snapshot.empty) {
+                    messagesList.innerHTML = '<p class="text-gray-500">No messages.</p>';
+                    return;
+                }
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'p-3 bg-white rounded-md shadow-sm border border-gray-200';
+                    messageDiv.innerHTML = `
+                        <p class="font-semibold">From: ${data.senderName || 'Anonymous'}</p>
+                        <p class="text-sm text-gray-600">Sent: ${new Date(data.sentAt.toDate()).toLocaleString()}</p>
+                        <p class="mt-2">${data.content}</p>
+                    `;
+                    messagesList.appendChild(messageDiv);
+                });
+                logAction('Teacher messages loaded', { teacherId: currentUserId, count: snapshot.size });
+            }, (error) => {
+                console.error("Error loading teacher's messages:", error);
+                showCustomModal("Error loading your messages: " + error.message);
+                logAction('Error loading teacher messages', { teacherId: currentUserId, error: error.message });
+            });
+        }
+
+        // --- Student Logic ---
+        document.getElementById('search-teacher-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'student') { showCustomModal("Not authorized."); return; }
+
+            const searchTerm = document.getElementById('search-teacher-input').value.toLowerCase();
+            const searchResultsDiv = document.getElementById('search-results');
+            searchResultsDiv.innerHTML = ''; // Clear previous results
+
+            if (!searchTerm) {
+                searchResultsDiv.innerHTML = '<p class="text-gray-500">Please enter a search term.</p>';
+                return;
+            }
+
+            try {
+                const teachersRef = collection(db, `artifacts/${appId}/public/data/teachers`);
+                const querySnapshot = await getDocs(teachersRef);
+                let foundTeachers = [];
+
+                querySnapshot.forEach(docSnap => {
+                    const teacher = { id: docSnap.id, ...docSnap.data() };
+                    if (teacher.name.toLowerCase().includes(searchTerm) ||
+                        teacher.subject.toLowerCase().includes(searchTerm) ||
+                        teacher.department.toLowerCase().includes(searchTerm)) {
+                        foundTeachers.push(teacher);
+                    }
+                });
+
+                if (foundTeachers.length === 0) {
+                    searchResultsDiv.innerHTML = '<p class="text-gray-500">No teachers found matching your search.</p>';
+                } else {
+                    foundTeachers.forEach(teacher => {
+                        const teacherDiv = document.createElement('div');
+                        teacherDiv.className = 'p-3 bg-white rounded-md shadow-sm border border-gray-200';
+                        teacherDiv.innerHTML = `
+                            <p class="font-semibold">${teacher.name}</p>
+                            <p class="text-sm text-gray-600">Department: ${teacher.department}</p>
+                            <p class="text-sm text-gray-600">Subject: ${teacher.subject}</p>
+                            <button data-id="${teacher.id}" class="view-slots-btn bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 mt-2">View Available Slots</button>
+                        `;
+                        searchResultsDiv.appendChild(teacherDiv);
+                    });
+                }
+                logAction('Student searched teachers', { searchTerm: searchTerm, resultsCount: foundTeachers.length });
+            } catch (error) {
+                console.error("Error searching teachers:", error);
+                showCustomModal("Failed to search teachers: " + error.message);
+                logAction('Student failed to search teachers', { searchTerm: searchTerm, error: error.message });
+            }
+        });
+
+        document.getElementById('search-results').addEventListener('click', async (e) => {
+            if (!isAuthReady || currentUserRole !== 'student') { showCustomModal("Not authorized."); return; }
+
+            if (e.target.classList.contains('view-slots-btn')) {
+                const teacherId = e.target.dataset.id;
+                // Programmatically select the teacher in the booking form and load slots
+                document.getElementById('book-teacher-select').value = teacherId;
+                await loadAvailableSlots(teacherId);
+                // Scroll to the booking section
+                document.getElementById('book-appointment-form').scrollIntoView({ behavior: 'smooth' });
+                logAction('Student viewed teacher slots', { teacherId: teacherId });
+            }
+        });
+
+        // Load teachers for the booking dropdown
+        function loadTeachersForStudentBooking() {
+            if (!isAuthReady || currentUserRole !== 'student') return;
+
+            const select = document.getElementById('book-teacher-select');
+            select.innerHTML = '<option value="">Select Teacher</option>';
+            const teachersRef = collection(db, `artifacts/${appId}/public/data/teachers`);
+
+            onSnapshot(teachersRef, (snapshot) => {
+                const teachers = [];
+                snapshot.forEach(doc => {
+                    teachers.push({ id: doc.id, ...doc.data() });
+                });
+                teachers.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+
+                select.innerHTML = '<option value="">Select Teacher</option>';
+                teachers.forEach(teacher => {
+                    const option = document.createElement('option');
+                    option.value = teacher.id;
+                    option.textContent = `${teacher.name} (${teacher.subject})`;
+                    select.appendChild(option);
+                });
+                logAction('Student teachers loaded for booking', { count: teachers.length });
+            }, (error) => {
+                console.error("Error loading teachers for student booking:", error);
+                showCustomModal("Error loading teachers for booking: " + error.message);
+                logAction('Error loading teachers for student booking', { error: error.message });
+            });
+        }
+
+        document.getElementById('book-teacher-select').addEventListener('change', (e) => {
+            const teacherId = e.target.value;
+            if (teacherId) {
+                loadAvailableSlots(teacherId);
+            } else {
+                document.getElementById('available-slots-select').innerHTML = '<option value="">Select Available Slot</option>';
+            }
+        });
+
+        // Load available slots for a selected teacher
+        async function loadAvailableSlots(teacherId) {
+            if (!isAuthReady || currentUserRole !== 'student') { showCustomModal("Not authorized."); return; }
+
+            const slotsSelect = document.getElementById('available-slots-select');
+            slotsSelect.innerHTML = '<option value="">Select Available Slot</option>'; // Clear existing options
+
+            if (!teacherId) return;
+
+            try {
+                const q = query(collection(db, `artifacts/${appId}/public/data/appointments`),
+                                where("teacherId", "==", teacherId),
+                                where("status", "==", "available"));
+                const querySnapshot = await getDocs(q);
+                let availableSlots = [];
+                querySnapshot.forEach(docSnap => {
+                    availableSlots.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Sort slots by date/time
+                availableSlots.sort((a, b) => a.dateTime.toDate() - b.dateTime.toDate());
+
+                if (availableSlots.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No available slots for this teacher.';
+                    slotsSelect.appendChild(option);
+                } else {
+                    availableSlots.forEach(slot => {
+                        const option = document.createElement('option');
+                        option.value = slot.id;
+                        option.textContent = new Date(slot.dateTime.toDate()).toLocaleString();
+                        slotsSelect.appendChild(option);
+                    });
+                }
+                logAction('Student loaded available slots', { teacherId: teacherId, count: availableSlots.length });
+            } catch (error) {
+                console.error("Error loading available slots:", error);
+                showCustomModal("Failed to load available slots: " + error.message);
+                logAction('Error loading available slots', { teacherId: teacherId, error: error.message });
+            }
+        }
+
+        document.getElementById('book-appointment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'student') { showCustomModal("Not authorized."); return; }
+
+            const teacherId = document.getElementById('book-teacher-select').value;
+            const slotId = document.getElementById('available-slots-select').value;
+            const purpose = document.getElementById('appointment-purpose').value;
+
+            if (!teacherId || !slotId || !purpose) {
+                showCustomModal("Please select a teacher, an available slot, and provide a purpose.");
+                return;
+            }
+
+            try {
+                const appointmentRef = doc(db, `artifacts/${appId}/public/data/appointments`, slotId);
+                const appointmentDoc = await getDoc(appointmentRef);
+
+                if (appointmentDoc.exists() && appointmentDoc.data().status === 'available') {
+                    const studentName = auth.currentUser.displayName || auth.currentUser.email; // Get student name
+
+                    await updateDoc(appointmentRef, {
+                        status: 'pending', // Change to 'pending' for teacher approval
+                        bookedBy: currentUserId,
+                        bookedByStudentName: studentName,
+                        purpose: purpose,
+                        bookedAt: new Date()
+                    });
+                    showCustomModal("Appointment request sent successfully! Waiting for teacher approval.");
+                    document.getElementById('book-appointment-form').reset();
+                    logAction('Student booked appointment', { teacherId: teacherId, slotId: slotId, studentId: currentUserId });
+                } else {
+                    showCustomModal("Selected slot is no longer available or does not exist.");
+                    logAction('Student failed to book appointment - slot unavailable', { teacherId: teacherId, slotId: slotId });
+                }
+            } catch (error) {
+                console.error("Error booking appointment:", error);
+                showCustomModal("Failed to book appointment: " + error.message);
+                logAction('Student failed to book appointment', { teacherId: teacherId, slotId: slotId, error: error.message });
+            }
+        });
+
+        // Load teachers for the message recipient dropdown
+        function loadTeachersForMessageSending() {
+            if (!isAuthReady || currentUserRole !== 'student') return;
+
+            const select = document.getElementById('message-recipient-select');
+            select.innerHTML = '<option value="">Select Teacher</option>';
+            const teachersRef = collection(db, `artifacts/${appId}/public/data/teachers`);
+
+            onSnapshot(teachersRef, (snapshot) => {
+                const teachers = [];
+                snapshot.forEach(doc => {
+                    teachers.push({ id: doc.id, ...doc.data() });
+                });
+                teachers.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+
+                select.innerHTML = '<option value="">Select Teacher</option>';
+                teachers.forEach(teacher => {
+                    const option = document.createElement('option');
+                    option.value = teacher.id;
+                    option.textContent = `${teacher.name} (${teacher.subject})`;
+                    select.appendChild(option);
+                });
+                logAction('Student teachers loaded for messaging', { count: teachers.length });
+            }, (error) => {
+                console.error("Error loading teachers for message sending:", error);
+                showCustomModal("Error loading teachers for messaging: " + error.message);
+                logAction('Error loading teachers for messaging', { error: error.message });
+            });
+        }
+
+        document.getElementById('send-message-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAuthReady || currentUserRole !== 'student') { showCustomModal("Not authorized."); return; }
+
+            const recipientTeacherId = document.getElementById('message-recipient-select').value;
+            const messageContent = document.getElementById('message-content').value;
+
+            if (!recipientTeacherId || !messageContent) {
+                showCustomModal("Please select a teacher and type your message.");
+                return;
+            }
+
+            try {
+                const senderName = auth.currentUser.displayName || auth.currentUser.email; // Get student name
+
+                await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
+                    senderId: currentUserId,
+                    senderName: senderName,
+                    recipientId: recipientTeacherId,
+                    content: messageContent,
+                    sentAt: new Date(),
+                    read: false
+                });
+                showCustomModal("Message sent successfully!");
+                document.getElementById('send-message-form').reset();
+                logAction('Student sent message', { senderId: currentUserId, recipientId: recipientTeacherId });
+            } catch (error) {
+                console.error("Error sending message:", error);
+                showCustomModal("Failed to send message: " + error.message);
+                logAction('Student failed to send message', { senderId: currentUserId, recipientId: recipientTeacherId, error: error.message });
+            }
+        });
+
+        // Home button functionality (resets UI to auth or dashboard based on current auth state)
+        document.getElementById('home-button').addEventListener('click', () => {
+            updateUI(auth.currentUser);
+        });
+
+    </script>
+</body>
+</html>

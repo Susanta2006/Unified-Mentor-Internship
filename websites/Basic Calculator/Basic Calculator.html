@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basic Calculator</title>
+<link rel="stylesheet" href="style/style.css">
+<script src="script/script.js" language="javascript"></script>
+</head>
+<body>
+<div>
+<input type="hidden" id="value1" name="value1" value="">
+<input type="hidden" id="sign1" name="sign1" value="">
+<input type="hidden" id="value2" name="value2" value="">
+<table cellpadding="0px" cellspacing="0px" align="center">
+<tr>
+<th colspan="4" align="left" height="20px">Basic Calculator</th>
+</tr>
+<tr>
+<td id="tda" class="tda" colspan="4" height="130px"><input type="text" id="screen" value="0" onkeyUp="setZero();" onMouseMove="setZero();" readonly autofocus></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="%" class="calc1" id="func" onclick="percentage();"/></td>
+<td id="td2"><input type="button" value="CE" class="calc1" id="func" onclick="delete2();"/></td>
+<td id="td2"><input type="button" value="C" class="calc1" id="func" onclick="delete1();"/></td>
+<td id="td2"><input type="button" value="DEL" class="calc1" id="func" onclick="delete3();"/></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="1/x" class="calc1" onclick="reciprocal();"/></td>
+<td id="td2"><button class="calc1" onclick="sign('xn');">x<sup>n</sup></button></td>
+<td id="td2"><button class="calc1" onclick="sign('x^n');"><sup>n</sup>&radic;x</button></td>
+<td id="td2"><input type="button" value="/" class="calc1" id="func" onclick="sign('/');"/></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="7" class="calc2" onclick="key(7);"/></td>
+<td id="td2"><input type="button" value="8" class="calc2" onclick="key(8);"/></td>
+<td id="td2"><input type="button" value="9" class="calc2" onclick="key(9);"/></td>
+<td id="td2"><input type="button" value="*" class="calc2" id="func" onclick="sign('*');"/></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="4" class="calc2" onclick="key(4);"/></td>
+<td id="td2"><input type="button" value="5" class="calc2" onclick="key(5);"/></td>
+<td id="td2"><input type="button" value="6" class="calc2" onclick="key(6);"/></td>
+<td id="td2"><input type="button" value="-" class="calc2" id="func" onclick="sign('-');"/></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="1" class="calc2" onclick="key(1);"/></td>
+<td id="td2"><input type="button" value="2" class="calc2" onclick="key(2);"/></td>
+<td id="td2"><input type="button" value="3" class="calc2" onclick="key(3);"/></td>
+<td id="td2"><input type="button" value="+" class="calc2" id="func" onclick="sign('+');"/></td>
+</tr>
+
+<tr>
+<td id="td2"><input type="button" value="+/-" class="calc2" onclick="signinverse();"/></td>
+<td id="td2"><input type="button" value="0" class="calc2" onclick="key(0);"/></td>
+<td id="td2"><input type="button" value="." class="calc2" onclick="key('.');"/></td>
+<td id="td2"><input type="button" value="=" id="equals" onclick="calculate();"/></td>
+</tr>
+
+</table>
+</div>
+</body>

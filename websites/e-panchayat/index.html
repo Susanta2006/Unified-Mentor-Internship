@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital E-Gram Panchayat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .btn-primary {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca; /* Indigo-700 */
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* Gray-500 */
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* Gray-600 */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* Gray-300 */
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #4f46e5; /* Indigo-600 */
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .error-message {
+            color: #ef4444; /* Red-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.5rem;
+        }
+        .success-message {
+            color: #22c55e; /* Green-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.5rem;
+        }
+        /* Custom scrollbar for tables */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <header class="bg-indigo-700 text-white p-4 shadow-md">
+        <div class="container flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Digital E-Gram Panchayat</h1>
+            <nav>
+                <button id="logoutBtn" class="btn-secondary hidden">Logout</button>
+            </nav>
+        </div>
+    </header>
+
+    <main id="appContent" class="flex-grow container py-8">
+        <div id="loadingIndicator" class="hidden flex justify-center items-center h-full">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700"></div>
+            <p class="ml-4 text-lg text-gray-600">Loading...</p>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+        <div class="container">
+            <p>&copy; 2025 Digital E-Gram Panchayat. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables (will be initialized after auth)
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let userRole = null; // 'user', 'staff', 'officer'
+
+        // DOM Elements
+        const appContent = document.getElementById('appContent');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // Firebase Configuration (provided by Canvas environment)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        /**
+         * Initializes Firebase and sets up authentication listener.
+         */
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config is missing. Please ensure __firebase_config is provided.");
+                    displayMessage("Error: Firebase configuration is missing.", 'error');
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign in with custom token if available, otherwise anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Signed in with custom token.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Signed in anonymously.");
+                }
+
+                // Set up auth state listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        logoutBtn.classList.remove('hidden');
+                        console.log("User authenticated:", userId);
+                        // Fetch user role after authentication
+                        await fetchUserRole(userId);
+                        renderContentBasedOnRole();
+                    } else {
+                        userId = null;
+                        userRole = null;
+                        logoutBtn.classList.add('hidden');
+                        console.log("User not authenticated.");
+                        renderLoginForm(); // Show login form if not authenticated
+                    }
+                    hideLoading();
+                });
+
+                logoutBtn.addEventListener('click', handleLogout);
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                displayMessage(`Firebase initialization failed: ${error.message}`, 'error');
+                hideLoading();
+            }
+        }
+
+        /**
+         * Displays a loading indicator.
+         */
+        function showLoading() {
+            appContent.innerHTML = ''; // Clear existing content
+            loadingIndicator.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the loading indicator.
+         */
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+        }
+
+        /**
+         * Displays a message to the user (success or error).
+         * @param {string} message - The message to display.
+         * @param {'success'|'error'} type - The type of message.
+         */
+        function displayMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-3 rounded-lg mb-4 text-center ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            messageDiv.textContent = message;
+            appContent.prepend(messageDiv); // Add to the top of the content area
+            setTimeout(() => messageDiv.remove(), 5000); // Remove after 5 seconds
+        }
+
+        /**
+         * Renders the login/registration form.
+         */
+        function renderLoginForm() {
+            appContent.innerHTML = `
+                <div class="max-w-md mx-auto card">
+                    <h2 class="text-3xl font-bold text-center mb-6 text-indigo-700">Welcome to E-Gram Panchayat</h2>
+                    <p class="text-center text-gray-600 mb-8">Please login or register to access services.</p>
+
+                    <form id="loginForm" class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="email" class="input-field" placeholder="your.email@example.com" required>
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="password" class="input-field" placeholder="********" required>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Login</button>
+                        <p class="text-center text-sm text-gray-600 mt-4">
+                            Don't have an account? <button type="button" id="showRegisterBtn" class="text-indigo-600 hover:underline font-medium">Register here</button>
+                        </p>
+                        <div id="loginError" class="error-message hidden"></div>
+                    </form>
+
+                    <form id="registerForm" class="space-y-4 hidden mt-8">
+                        <h3 class="text-2xl font-bold text-center mb-4 text-indigo-700">Register New Account</h3>
+                        <div>
+                            <label for="regEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="regEmail" class="input-field" placeholder="your.email@example.com" required>
+                        </div>
+                        <div>
+                            <label for="regPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="regPassword" class="input-field" placeholder="********" required>
+                        </div>
+                        <div>
+                            <label for="regRole" class="block text-sm font-medium text-gray-700 mb-1">Register as</label>
+                            <select id="regRole" class="input-field" required>
+                                <option value="user">Citizen (User)</option>
+                                <option value="staff">Staff</option>
+                                <option value="officer">Officer/Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Register</button>
+                        <p class="text-center text-sm text-gray-600 mt-4">
+                            Already have an account? <button type="button" id="showLoginBtn" class="text-indigo-600 hover:underline font-medium">Login here</button>
+                        </p>
+                        <div id="registerError" class="error-message hidden"></div>
+                    </form>
+                </div>
+            `;
+
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const showRegisterBtn = document.getElementById('showRegisterBtn');
+            const showLoginBtn = document.getElementById('showLoginBtn');
+
+            showRegisterBtn.addEventListener('click', () => {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+            });
+
+            showLoginBtn.addEventListener('click', () => {
+                registerForm.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+            });
+
+            loginForm.addEventListener('submit', handleLogin);
+            registerForm.addEventListener('submit', handleRegister);
+        }
+
+        /**
+         * Handles user login.
+         * @param {Event} e - The form submission event.
+         */
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginError = document.getElementById('loginError');
+            loginError.classList.add('hidden');
+
+            try {
+                showLoading();
+                await signInWithEmailAndPassword(auth, email, password);
+                console.log("User logged in successfully.");
+                // onAuthStateChanged listener will handle rendering content
+            } catch (error) {
+                console.error("Login error:", error);
+                loginError.textContent = `Login failed: ${error.message}`;
+                loginError.classList.remove('hidden');
+                hideLoading();
+            }
+        }
+
+        /**
+         * Handles user registration.
+         * @param {Event} e - The form submission event.
+         */
+        async function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+            const registerError = document.getElementById('registerError');
+            registerError.classList.add('hidden');
+
+            try {
+                showLoading();
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const newUser = userCredential.user;
+
+                // Store user role in Firestore
+                const userDocRef = doc(db, `artifacts/${appId}/users/${newUser.uid}/profile`, 'data');
+                await setDoc(userDocRef, {
+                    email: newUser.email,
+                    role: role,
+                    createdAt: serverTimestamp()
+                });
+
+                console.log("User registered successfully:", newUser.uid, "Role:", role);
+                displayMessage("Registration successful! You are now logged in.", 'success');
+                // onAuthStateChanged listener will handle rendering content
+            } catch (error) {
+                console.error("Registration error:", error);
+                registerError.textContent = `Registration failed: ${error.message}`;
+                registerError.classList.remove('hidden');
+                hideLoading();
+            }
+        }
+
+        /**
+         * Handles user logout.
+         */
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                console.log("User logged out.");
+                displayMessage("You have been logged out.", 'success');
+                // onAuthStateChanged listener will handle rendering login form
+            } catch (error) {
+                console.error("Logout error:", error);
+                displayMessage(`Logout failed: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Fetches the role of the current user from Firestore.
+         * @param {string} uid - The user ID.
+         */
+        async function fetchUserRole(uid) {
+            try {
+                const userDocRef = doc(db, `artifacts/${appId}/users/${uid}/profile`, 'data');
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    userRole = userDocSnap.data().role;
+                    console.log("User role fetched:", userRole);
+                } else {
+                    // If no role found, default to 'user' or prompt for role
+                    userRole = 'user';
+                    console.warn("User profile not found, defaulting to 'user' role.");
+                    // Optionally, create a default profile for the user
+                    await setDoc(userDocRef, {
+                        email: auth.currentUser.email,
+                        role: 'user',
+                        createdAt: serverTimestamp()
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching user role:", error);
+                userRole = 'user'; // Fallback to user role on error
+            }
+        }
+
+        /**
+         * Renders content based on the authenticated user's role.
+         */
+        function renderContentBasedOnRole() {
+            if (!userId || !userRole) {
+                renderLoginForm();
+                return;
+            }
+
+            appContent.innerHTML = `
+                <div class="card mb-8">
+                    <h2 class="text-3xl font-bold text-indigo-700 mb-4">Welcome, ${userRole.charAt(0).toUpperCase() + userRole.slice(1)}!</h2>
+                    <p class="text-gray-600">Your User ID: <span class="font-mono text-sm bg-gray-100 p-1 rounded">${userId}</span></p>
+                    <p class="text-gray-600 mt-2">This is your dashboard. Select an option from the menu below.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${userRole === 'user' ? `
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderSearchServices()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <span>Search Services</span>
+                        </button>
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderMyApplications()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list"><rect width="8" height="4" x="8" y="2"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                            <span>My Applications</span>
+                        </button>
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderMyProfile()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>My Profile</span>
+                        </button>
+                    ` : ''}
+
+                    ${userRole === 'staff' ? `
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderViewServices()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span>View Services</span>
+                        </button>
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderUpdateApplicationStatus()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check"><rect width="8" height="4" x="8" y="2"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 11 2 2 4-4"/></svg>
+                            <span>Update Application Status</span>
+                        </button>
+                    ` : ''}
+
+                    ${userRole === 'officer' ? `
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderCreateService()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                            <span>Create Service</span>
+                        </button>
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderManageServices()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                            <span>Manage Services</span>
+                        </button>
+                        <button class="btn-primary p-6 text-xl flex items-center justify-center space-x-2" onclick="renderUpdateApplicationStatus()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check"><rect width="8" height="4" x="8" y="2"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 11 2 2 4-4"/></svg>
+                            <span>Update Application Status</span>
+                        </button>
+                    ` : ''}
+                </div>
+                <button class="btn-secondary mt-8 w-full md:w-auto" onclick="renderDashboard()">Back to Dashboard</button>
+            `;
+            // Expose functions to global scope for onclick attributes
+            window.renderDashboard = renderContentBasedOnRole;
+            window.renderSearchServices = renderSearchServices;
+            window.renderMyApplications = renderMyApplications;
+            window.renderMyProfile = renderMyProfile;
+            window.renderViewServices = renderViewServices;
+            window.renderUpdateApplicationStatus = renderUpdateApplicationStatus;
+            window.renderCreateService = renderCreateService;
+            window.renderManageServices = renderManageServices;
+        }
+
+        /**
+         * Renders the "Search Services" view for users.
+         */
+        function renderSearchServices() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Search & Apply for Services</h2>
+                    <div class="mb-4">
+                        <input type="text" id="serviceSearchInput" class="input-field" placeholder="Search services by name or description...">
+                    </div>
+                    <div id="servicesList" class="space-y-4">
+                        <p class="text-gray-500 text-center">Loading services...</p>
+                    </div>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            const serviceSearchInput = document.getElementById('serviceSearchInput');
+            serviceSearchInput.addEventListener('input', () => fetchAndDisplayServices(serviceSearchInput.value));
+            fetchAndDisplayServices(); // Initial load
+        }
+
+        /**
+         * Fetches and displays services.
+         * @param {string} searchTerm - Optional search term.
+         */
+        function fetchAndDisplayServices(searchTerm = '') {
+            const servicesListDiv = document.getElementById('servicesList');
+            if (!servicesListDiv) return; // Ensure element exists
+
+            const servicesCollectionRef = collection(db, `artifacts/${appId}/public/data/services`);
+            onSnapshot(servicesCollectionRef, (snapshot) => {
+                let servicesHtml = '';
+                if (snapshot.empty) {
+                    servicesHtml = '<p class="text-gray-500 text-center">No services available yet.</p>';
+                } else {
+                    const filteredServices = snapshot.docs.filter(doc => {
+                        const data = doc.data();
+                        const name = data.name ? data.name.toLowerCase() : '';
+                        const description = data.description ? data.description.toLowerCase() : '';
+                        const term = searchTerm.toLowerCase();
+                        return name.includes(term) || description.includes(term);
+                    });
+
+                    if (filteredServices.length === 0) {
+                        servicesHtml = '<p class="text-gray-500 text-center">No services found matching your search.</p>';
+                    } else {
+                        filteredServices.forEach(doc => {
+                            const service = doc.data();
+                            servicesHtml += `
+                                <div class="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-indigo-800">${service.name}</h3>
+                                        <p class="text-gray-700 mt-1">${service.description}</p>
+                                        <p class="text-sm text-gray-500 mt-2">Fees: ₹${service.fees || '0'}</p>
+                                    </div>
+                                    <button class="btn-primary mt-4 md:mt-0" onclick="showApplyServiceModal('${doc.id}', '${service.name}')">Apply Now</button>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+                servicesListDiv.innerHTML = servicesHtml;
+            }, (error) => {
+                console.error("Error fetching services:", error);
+                servicesListDiv.innerHTML = '<p class="error-message text-center">Error loading services. Please try again.</p>';
+            });
+        }
+
+        /**
+         * Shows a modal for applying to a service.
+         * @param {string} serviceId - The ID of the service.
+         * @param {string} serviceName - The name of the service.
+         */
+        window.showApplyServiceModal = function(serviceId, serviceName) {
+            const modalHtml = `
+                <div id="applyServiceModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-lg p-8 max-w-lg w-full shadow-lg">
+                        <h3 class="text-2xl font-bold text-indigo-700 mb-6">Apply for: ${serviceName}</h3>
+                        <form id="applyServiceForm" class="space-y-4">
+                            <div>
+                                <label for="applicantName" class="block text-sm font-medium text-gray-700 mb-1">Your Full Name</label>
+                                <input type="text" id="applicantName" class="input-field" value="${auth.currentUser?.displayName || ''}" required>
+                            </div>
+                            <div>
+                                <label for="applicantContact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                                <input type="tel" id="applicantContact" class="input-field" placeholder="e.g., +919876543210" required>
+                            </div>
+                            <div>
+                                <label for="applicationRemarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks (optional)</label>
+                                <textarea id="applicationRemarks" class="input-field h-24" placeholder="Any additional information..."></textarea>
+                            </div>
+                            <div id="applyError" class="error-message hidden"></div>
+                            <div class="flex justify-end space-x-4 mt-6">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('applyServiceModal').remove()">Cancel</button>
+                                <button type="submit" class="btn-primary">Submit Application</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            document.getElementById('applyServiceForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const applicantName = document.getElementById('applicantName').value;
+                const applicantContact = document.getElementById('applicantContact').value;
+                const applicationRemarks = document.getElementById('applicationRemarks').value;
+                const applyError = document.getElementById('applyError');
+                applyError.classList.add('hidden');
+
+                try {
+                    const applicationsCollectionRef = collection(db, `artifacts/${appId}/public/data/applications`);
+                    await addDoc(applicationsCollectionRef, {
+                        serviceId: serviceId,
+                        serviceName: serviceName,
+                        applicantId: userId,
+                        applicantEmail: auth.currentUser.email,
+                        applicantName: applicantName,
+                        applicantContact: applicantContact,
+                        remarks: applicationRemarks,
+                        status: 'Pending', // Initial status
+                        appliedAt: serverTimestamp()
+                    });
+                    displayMessage("Application submitted successfully!", 'success');
+                    document.getElementById('applyServiceModal').remove();
+                } catch (error) {
+                    console.error("Error submitting application:", error);
+                    applyError.textContent = `Failed to submit application: ${error.message}`;
+                    applyError.classList.remove('hidden');
+                }
+            });
+        };
+
+        /**
+         * Renders the "My Applications" view for users.
+         */
+        function renderMyApplications() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">My Applications</h2>
+                    <div id="myApplicationsList" class="table-container overflow-x-auto">
+                        <p class="text-gray-500 text-center">Loading your applications...</p>
+                    </div>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            const myApplicationsListDiv = document.getElementById('myApplicationsList');
+            if (!myApplicationsListDiv) return;
+
+            const applicationsCollectionRef = collection(db, `artifacts/${appId}/public/data/applications`);
+            const q = query(applicationsCollectionRef, where("applicantId", "==", userId));
+
+            onSnapshot(q, (snapshot) => {
+                let applicationsHtml = '';
+                if (snapshot.empty) {
+                    applicationsHtml = '<p class="text-gray-500 text-center">You have not submitted any applications yet.</p>';
+                } else {
+                    applicationsHtml = `
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600">
+                                    <th class="py-3 px-4 border-b">Service Name</th>
+                                    <th class="py-3 px-4 border-b">Status</th>
+                                    <th class="py-3 px-4 border-b">Applied On</th>
+                                    <th class="py-3 px-4 border-b">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    snapshot.docs.forEach(doc => {
+                        const app = doc.data();
+                        const appliedDate = app.appliedAt ? new Date(app.appliedAt.toDate()).toLocaleDateString() : 'N/A';
+                        const statusColor = app.status === 'Approved' ? 'text-green-600' :
+                                            app.status === 'Rejected' ? 'text-red-600' : 'text-yellow-600';
+                        applicationsHtml += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-3 px-4">${app.serviceName}</td>
+                                <td class="py-3 px-4 font-medium ${statusColor}">${app.status}</td>
+                                <td class="py-3 px-4">${appliedDate}</td>
+                                <td class="py-3 px-4 text-sm text-gray-600">${app.remarks || 'No remarks'}</td>
+                            </tr>
+                        `;
+                    });
+                    applicationsHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                }
+                myApplicationsListDiv.innerHTML = applicationsHtml;
+            }, (error) => {
+                console.error("Error fetching applications:", error);
+                myApplicationsListDiv.innerHTML = '<p class="error-message text-center">Error loading applications. Please try again.</p>';
+            });
+        }
+
+        /**
+         * Renders the "My Profile" view for users.
+         */
+        function renderMyProfile() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">My Profile</h2>
+                    <div id="profileDetails" class="space-y-4">
+                        <p class="text-gray-700"><span class="font-semibold">Email:</span> <span id="profileEmail">Loading...</span></p>
+                        <p class="text-gray-700"><span class="font-semibold">Role:</span> <span id="profileRole">Loading...</span></p>
+                        <p class="text-gray-700"><span class="font-semibold">User ID:</span> <span class="font-mono text-sm bg-gray-100 p-1 rounded">${userId}</span></p>
+                        <button id="editProfileBtn" class="btn-primary mt-4">Edit Profile</button>
+                    </div>
+                    <form id="editProfileForm" class="space-y-4 hidden mt-6">
+                        <h3 class="text-xl font-bold text-indigo-700">Edit Profile Information</h3>
+                        <div>
+                            <label for="displayName" class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                            <input type="text" id="displayName" class="input-field" placeholder="Your Name">
+                        </div>
+                        <div id="profileError" class="error-message hidden"></div>
+                        <div class="flex space-x-4">
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                            <button type="button" id="cancelEditProfileBtn" class="btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+
+            const profileEmailSpan = document.getElementById('profileEmail');
+            const profileRoleSpan = document.getElementById('profileRole');
+            const editProfileBtn = document.getElementById('editProfileBtn');
+            const editProfileForm = document.getElementById('editProfileForm');
+            const cancelEditProfileBtn = document.getElementById('cancelEditProfileBtn');
+            const displayNameInput = document.getElementById('displayName');
+            const profileErrorDiv = document.getElementById('profileError');
+
+            // Populate current data
+            profileEmailSpan.textContent = auth.currentUser.email;
+            profileRoleSpan.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+
+            const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.displayName) {
+                        displayNameInput.value = data.displayName;
+                    }
+                }
+            }).catch(error => {
+                console.error("Error fetching profile data:", error);
+            });
+
+            editProfileBtn.addEventListener('click', () => {
+                document.getElementById('profileDetails').classList.add('hidden');
+                editProfileForm.classList.remove('hidden');
+            });
+
+            cancelEditProfileBtn.addEventListener('click', () => {
+                editProfileForm.classList.add('hidden');
+                document.getElementById('profileDetails').classList.remove('hidden');
+            });
+
+            editProfileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newDisplayName = displayNameInput.value;
+                profileErrorDiv.classList.add('hidden');
+
+                try {
+                    await updateDoc(userDocRef, {
+                        displayName: newDisplayName
+                    });
+                    displayMessage("Profile updated successfully!", 'success');
+                    document.getElementById('profileDetails').classList.remove('hidden');
+                    editProfileForm.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error updating profile:", error);
+                    profileErrorDiv.textContent = `Failed to update profile: ${error.message}`;
+                    profileErrorDiv.classList.remove('hidden');
+                }
+            });
+        }
+
+        /**
+         * Renders the "View Services" view for staff.
+         */
+        function renderViewServices() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Available Services</h2>
+                    <div id="staffServicesList" class="table-container overflow-x-auto">
+                        <p class="text-gray-500 text-center">Loading services...</p>
+                    </div>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            const staffServicesListDiv = document.getElementById('staffServicesList');
+            if (!staffServicesListDiv) return;
+
+            const servicesCollectionRef = collection(db, `artifacts/${appId}/public/data/services`);
+            onSnapshot(servicesCollectionRef, (snapshot) => {
+                let servicesHtml = '';
+                if (snapshot.empty) {
+                    servicesHtml = '<p class="text-gray-500 text-center">No services available yet.</p>';
+                } else {
+                    servicesHtml = `
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600">
+                                    <th class="py-3 px-4 border-b">Service Name</th>
+                                    <th class="py-3 px-4 border-b">Description</th>
+                                    <th class="py-3 px-4 border-b">Fees</th>
+                                    <th class="py-3 px-4 border-b">Created On</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    snapshot.docs.forEach(doc => {
+                        const service = doc.data();
+                        const createdDate = service.createdAt ? new Date(service.createdAt.toDate()).toLocaleDateString() : 'N/A';
+                        servicesHtml += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-3 px-4">${service.name}</td>
+                                <td class="py-3 px-4">${service.description}</td>
+                                <td class="py-3 px-4">₹${service.fees || '0'}</td>
+                                <td class="py-3 px-4">${createdDate}</td>
+                            </tr>
+                        `;
+                    });
+                    servicesHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                }
+                staffServicesListDiv.innerHTML = servicesHtml;
+            }, (error) => {
+                console.error("Error fetching services for staff:", error);
+                staffServicesListDiv.innerHTML = '<p class="error-message text-center">Error loading services. Please try again.</p>';
+            });
+        }
+
+        /**
+         * Renders the "Update Application Status" view for staff and officers.
+         */
+        function renderUpdateApplicationStatus() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Manage Applications</h2>
+                    <div id="applicationsToManageList" class="table-container overflow-x-auto">
+                        <p class="text-gray-500 text-center">Loading applications...</p>
+                    </div>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            const applicationsToManageListDiv = document.getElementById('applicationsToManageList');
+            if (!applicationsToManageListDiv) return;
+
+            const applicationsCollectionRef = collection(db, `artifacts/${appId}/public/data/applications`);
+
+            onSnapshot(applicationsCollectionRef, (snapshot) => {
+                let applicationsHtml = '';
+                if (snapshot.empty) {
+                    applicationsHtml = '<p class="text-gray-500 text-center">No applications to manage.</p>';
+                } else {
+                    applicationsHtml = `
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600">
+                                    <th class="py-3 px-4 border-b">Service</th>
+                                    <th class="py-3 px-4 border-b">Applicant</th>
+                                    <th class="py-3 px-4 border-b">Contact</th>
+                                    <th class="py-3 px-4 border-b">Applied On</th>
+                                    <th class="py-3 px-4 border-b">Current Status</th>
+                                    <th class="py-3 px-4 border-b">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    snapshot.docs.forEach(doc => {
+                        const app = doc.data();
+                        const appliedDate = app.appliedAt ? new Date(app.appliedAt.toDate()).toLocaleDateString() : 'N/A';
+                        const statusColor = app.status === 'Approved' ? 'text-green-600' :
+                                            app.status === 'Rejected' ? 'text-red-600' : 'text-yellow-600';
+                        applicationsHtml += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-3 px-4">${app.serviceName}</td>
+                                <td class="py-3 px-4">${app.applicantName || app.applicantEmail}</td>
+                                <td class="py-3 px-4">${app.applicantContact || 'N/A'}</td>
+                                <td class="py-3 px-4">${appliedDate}</td>
+                                <td class="py-3 px-4 font-medium ${statusColor}">${app.status}</td>
+                                <td class="py-3 px-4">
+                                    <select class="input-field text-sm py-1 px-2" onchange="updateApplicationStatus('${doc.id}', this.value)">
+                                        <option value="Pending" ${app.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                        <option value="Approved" ${app.status === 'Approved' ? 'selected' : ''}>Approved</option>
+                                        <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                                        <option value="In Progress" ${app.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    applicationsHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                }
+                applicationsToManageListDiv.innerHTML = applicationsHtml;
+            }, (error) => {
+                console.error("Error fetching applications for management:", error);
+                applicationsToManageListDiv.innerHTML = '<p class="error-message text-center">Error loading applications. Please try again.</p>';
+            });
+        }
+
+        /**
+         * Updates the status of an application in Firestore.
+         * @param {string} appId - The ID of the application document.
+         * @param {string} newStatus - The new status to set.
+         */
+        window.updateApplicationStatus = async function(appIdToUpdate, newStatus) {
+            try {
+                const appDocRef = doc(db, `artifacts/${appId}/public/data/applications`, appIdToUpdate);
+                await updateDoc(appDocRef, {
+                    status: newStatus,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: userId
+                });
+                displayMessage(`Application status updated to "${newStatus}"!`, 'success');
+            } catch (error) {
+                console.error("Error updating application status:", error);
+                displayMessage(`Failed to update status: ${error.message}`, 'error');
+            }
+        };
+
+        /**
+         * Renders the "Create Service" view for officers/admins.
+         */
+        function renderCreateService() {
+            appContent.innerHTML = `
+                <div class="card max-w-lg mx-auto">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Create New Service</h2>
+                    <form id="createServiceForm" class="space-y-4">
+                        <div>
+                            <label for="serviceName" class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                            <input type="text" id="serviceName" class="input-field" placeholder="e.g., Birth Certificate Application" required>
+                        </div>
+                        <div>
+                            <label for="serviceDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="serviceDescription" class="input-field h-24" placeholder="Brief description of the service..." required></textarea>
+                        </div>
+                        <div>
+                            <label for="serviceFees" class="block text-sm font-medium text-gray-700 mb-1">Fees (₹)</label>
+                            <input type="number" id="serviceFees" class="input-field" value="0" min="0">
+                        </div>
+                        <div id="createServiceError" class="error-message hidden"></div>
+                        <button type="submit" class="btn-primary w-full">Create Service</button>
+                    </form>
+                    <button class="btn-secondary mt-8 w-full" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            document.getElementById('createServiceForm').addEventListener('submit', handleCreateService);
+        }
+
+        /**
+         * Handles creating a new service.
+         * @param {Event} e - The form submission event.
+         */
+        async function handleCreateService(e) {
+            e.preventDefault();
+            const name = document.getElementById('serviceName').value;
+            const description = document.getElementById('serviceDescription').value;
+            const fees = parseFloat(document.getElementById('serviceFees').value) || 0;
+            const createServiceError = document.getElementById('createServiceError');
+            createServiceError.classList.add('hidden');
+
+            try {
+                const servicesCollectionRef = collection(db, `artifacts/${appId}/public/data/services`);
+                await addDoc(servicesCollectionRef, {
+                    name: name,
+                    description: description,
+                    fees: fees,
+                    createdBy: userId,
+                    createdAt: serverTimestamp()
+                });
+                displayMessage("Service created successfully!", 'success');
+                document.getElementById('createServiceForm').reset(); // Clear form
+            } catch (error) {
+                console.error("Error creating service:", error);
+                createServiceError.textContent = `Failed to create service: ${error.message}`;
+                createServiceError.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Renders the "Manage Services" view for officers/admins.
+         */
+        function renderManageServices() {
+            appContent.innerHTML = `
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6">Manage Services</h2>
+                    <div id="servicesToManageList" class="table-container overflow-x-auto">
+                        <p class="text-gray-500 text-center">Loading services...</p>
+                    </div>
+                    <button class="btn-secondary mt-8" onclick="renderDashboard()">Back to Dashboard</button>
+                </div>
+            `;
+            const servicesToManageListDiv = document.getElementById('servicesToManageList');
+            if (!servicesToManageListDiv) return;
+
+            const servicesCollectionRef = collection(db, `artifacts/${appId}/public/data/services`);
+            onSnapshot(servicesCollectionRef, (snapshot) => {
+                let servicesHtml = '';
+                if (snapshot.empty) {
+                    servicesHtml = '<p class="text-gray-500 text-center">No services to manage yet.</p>';
+                } else {
+                    servicesHtml = `
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-sm font-semibold text-gray-600">
+                                    <th class="py-3 px-4 border-b">Service Name</th>
+                                    <th class="py-3 px-4 border-b">Fees</th>
+                                    <th class="py-3 px-4 border-b">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    snapshot.docs.forEach(doc => {
+                        const service = doc.data();
+                        servicesHtml += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-3 px-4">${service.name}</td>
+                                <td class="py-3 px-4">₹${service.fees || '0'}</td>
+                                <td class="py-3 px-4 flex space-x-2">
+                                    <button class="btn-primary text-sm px-3 py-1" onclick="showEditServiceModal('${doc.id}', '${service.name}', '${service.description}', ${service.fees || 0})">Edit</button>
+                                    <button class="btn-secondary text-sm px-3 py-1 bg-red-500 hover:bg-red-600" onclick="confirmDeleteService('${doc.id}', '${service.name}')">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    servicesHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                }
+                servicesToManageListDiv.innerHTML = servicesHtml;
+            }, (error) => {
+                console.error("Error fetching services for management:", error);
+                servicesToManageListDiv.innerHTML = '<p class="error-message text-center">Error loading services. Please try again.</p>';
+            });
+        }
+
+        /**
+         * Shows a modal for editing a service.
+         * @param {string} serviceId - The ID of the service to edit.
+         * @param {string} currentName - The current name of the service.
+         * @param {string} currentDescription - The current description of the service.
+         * @param {number} currentFees - The current fees of the service.
+         */
+        window.showEditServiceModal = function(serviceId, currentName, currentDescription, currentFees) {
+            const modalHtml = `
+                <div id="editServiceModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-lg p-8 max-w-lg w-full shadow-lg">
+                        <h3 class="text-2xl font-bold text-indigo-700 mb-6">Edit Service: ${currentName}</h3>
+                        <form id="editServiceForm" class="space-y-4">
+                            <div>
+                                <label for="editServiceName" class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                                <input type="text" id="editServiceName" class="input-field" value="${currentName}" required>
+                            </div>
+                            <div>
+                                <label for="editServiceDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea id="editServiceDescription" class="input-field h-24" required>${currentDescription}</textarea>
+                            </div>
+                            <div>
+                                <label for="editServiceFees" class="block text-sm font-medium text-gray-700 mb-1">Fees (₹)</label>
+                                <input type="number" id="editServiceFees" class="input-field" value="${currentFees}" min="0">
+                            </div>
+                            <div id="editServiceError" class="error-message hidden"></div>
+                            <div class="flex justify-end space-x-4 mt-6">
+                                <button type="button" class="btn-secondary" onclick="document.getElementById('editServiceModal').remove()">Cancel</button>
+                                <button type="submit" class="btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            document.getElementById('editServiceForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('editServiceName').value;
+                const newDescription = document.getElementById('editServiceDescription').value;
+                const newFees = parseFloat(document.getElementById('editServiceFees').value) || 0;
+                const editServiceError = document.getElementById('editServiceError');
+                editServiceError.classList.add('hidden');
+
+                try {
+                    const serviceDocRef = doc(db, `artifacts/${appId}/public/data/services`, serviceId);
+                    await updateDoc(serviceDocRef, {
+                        name: newName,
+                        description: newDescription,
+                        fees: newFees,
+                        updatedAt: serverTimestamp(),
+                        updatedBy: userId
+                    });
+                    displayMessage("Service updated successfully!", 'success');
+                    document.getElementById('editServiceModal').remove();
+                } catch (error) {
+                    console.error("Error updating service:", error);
+                    editServiceError.textContent = `Failed to update service: ${error.message}`;
+                    editServiceError.classList.remove('hidden');
+                }
+            });
+        };
+
+        /**
+         * Confirms deletion of a service.
+         * @param {string} serviceId - The ID of the service to delete.
+         * @param {string} serviceName - The name of the service.
+         */
+        window.confirmDeleteService = function(serviceId, serviceName) {
+            const modalHtml = `
+                <div id="deleteConfirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-lg p-8 max-w-sm w-full shadow-lg text-center">
+                        <h3 class="text-xl font-bold text-red-700 mb-4">Confirm Deletion</h3>
+                        <p class="text-gray-700 mb-6">Are you sure you want to delete the service "<span class="font-semibold">${serviceName}</span>"? This action cannot be undone.</p>
+                        <div class="flex justify-center space-x-4">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('deleteConfirmModal').remove()">Cancel</button>
+                            <button type="button" class="btn-primary bg-red-600 hover:bg-red-700" onclick="deleteService('${serviceId}')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        };
+
+        /**
+         * Deletes a service from Firestore.
+         * @param {string} serviceId - The ID of the service to delete.
+         */
+        window.deleteService = async function(serviceId) {
+            try {
+                const serviceDocRef = doc(db, `artifacts/${appId}/public/data/services`, serviceId);
+                await deleteDoc(serviceDocRef);
+                displayMessage("Service deleted successfully!", 'success');
+                document.getElementById('deleteConfirmModal').remove();
+            } catch (error) {
+                console.error("Error deleting service:", error);
+                displayMessage(`Failed to delete service: ${error.message}`, 'error');
+                document.getElementById('deleteConfirmModal').remove();
+            }
+        };
+
+        // Initialize the app when the window loads
+        window.onload = function() {
+            showLoading();
+            initializeFirebase();
+        };
+    </script>
+</body>
+</html>

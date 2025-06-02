@@ -1,0 +1,141 @@
+body{
+	background-image:url('image/background-image.jpg');
+	background-size:cover;
+	background-repeat:no-repeat;
+	background-position:center;
+	background-attachment: fixed;
+}
+
+div{
+	height:550px;
+	width:548px;
+	margin:auto;
+	padding-top:30px;
+	
+}
+
+table{
+	box-shadow:1px 2px 20px 10px;
+	border-radius:15px 40px 10px 30px;
+	height:550px; 
+	width:410px;
+	background-color:white;
+	border:10px solid gold;
+}
+
+th{
+	font-size:20px;
+	color:red;
+	padding-left:5px;
+	padding-bottom:10px;
+	text-shadow:2px 1px black;
+}
+
+.tda{
+	padding-bottom:20px;
+	text-align:center;
+	
+}
+
+#screen{
+	border-radius:15%;
+	height:116px;
+	width:390px;
+	border:5px solid yellow;
+	text-align:right;
+	font-size:45px;
+	padding-top:5px;
+	box-shadow:2px 0px 10px 2px black;
+	background-color:black;
+	color:white;
+	text-shadow:1px 2px gold;
+}
+
+#td2{
+	width:95px;
+	height:53.33px;
+	text-align:center;
+}
+
+.calc1{
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:20px;
+	background-color:red;
+	color:white;
+	box-shadow:2px 0px 10px 2px black;
+	text-shadow:2px 2px black;
+}
+
+#func{
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:25px;
+	color:black;
+	background-color:gold;
+	box-shadow:2px 0px 10px 2px black;
+	text-shadow:1px 1px red;
+}
+
+.calc2{
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:25px;
+	background-color:cyan;
+	box-shadow:2px 0px 10px 2px;
+	text-shadow:2px 2px gold;
+}
+
+#equals{
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:40px;
+	background-color:DodgerBlue;
+	color:white;
+	box-shadow:2px 0px 10px 2px black;
+	text-shadow:2px 2px black;
+}
+
+.calc1:hover{
+	background-color: black;
+	color: gold;
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:25px;
+	box-shadow:2px 0px 10px 2px gold;
+	text-shadow:2px 2px red;
+}
+#func:hover{
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:25px;
+	background-color: black;
+	color: gold;
+	box-shadow:2px 0px 10px 2px gold;
+	text-shadow:2px 2px red;
+}
+#equals:hover{
+	background-color: blue;
+	color: gold;
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:40px;
+	box-shadow:2px 0px 10px 2px gold;
+}
+.calc2:hover{
+	background-color: black;
+	color: gold;
+	width:95px;
+	height:53.33px;
+	border-radius:25%;
+	font-size:30px;
+	box-shadow:2px 0px 10px 2px gold;
+	text-shadow:2px 2px red;
+}

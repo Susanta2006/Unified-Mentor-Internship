@@ -1,0 +1,251 @@
+body{
+   margin:auto;
+   background-color:#041029;
+}
+table{
+	background-color:#263031;
+	width:500px;
+	height:300px;
+	margin:auto;
+	border-radius:20px 50px 10px 20px;
+	box-shadow:1px 2px 20px 10px white;
+}
+.navbar {
+  overflow: hidden;
+  background-color: black;
+  padding: 1px 100px;
+}
+
+.nav {
+  overflow: hidden;
+  background-color: black;
+  padding: 1px 100px;
+}
+
+.navbar a{
+  float: right;
+  font-size: 16px;
+  color: white;
+  text-align: center;
+  padding: 10px 18px;
+  text-decoration: none;
+}
+
+.nav a{
+  float: right;
+  font-size: 16px;
+  color: white;
+  text-align: center;
+  padding: 10px 18px;
+  text-decoration: none;
+}
+.nav a:hover{
+	background-color: gray;
+}
+.navbar a:hover{
+  background-color: gray;
+}
+.navbar a.active {
+  background-color: white;
+  color: black;
+  font-weight:bold;
+}
+
+#dv{
+	padding-top:100px;
+	padding-bottom:10px;
+	padding-left:100px;
+	padding-right:100px
+}
+
+#navbar-placeholder{
+	position:fixed;
+	width:100%;
+}
+th{
+	color:gold;
+	font-size:x-large;
+	height:50px;
+	text-align:center;
+	text-decoration:underline;
+}
+
+td{
+	color: white;
+	width:400px;
+	height:90px;
+	text-align:center;
+}
+
+#tdsbm{
+	width:250px;
+	padding-left:50px;
+}
+
+#sbm{
+	background-color:Lime;
+	color:white;
+	width:80px;
+	height:35px;
+	font-size:20px;
+	font-weight:bold;
+	text-shadow:1.5px 0.8px black;
+	border-radius:8px 8px 8px 8px;
+	border:1px solid Lime;
+}
+
+#tdclr{
+	width:250px;
+	padding-right:50px;
+}
+
+#clr{
+	background-color:orange;
+	color:white;
+	width:80px;
+	height:35px;
+	width:80px;
+	height:35px;
+	font-weight:bold;
+	font-size:20px;
+	text-shadow:1px 1px black;
+	border-radius:8px 8px 8px 8px;
+	border:1px solid orange;
+}
+.box{
+	border:0px solid white;
+	border-radius:8px 8px 8px 8px;
+	width:210px;
+	height:30px;
+}
+textarea{
+	border:0px solid white;
+	border-radius:8px 8px 8px 8px;
+	font-weight:bold;
+}
+#details{
+	color:gray;
+}
+#div-ico{
+	margin:auto;
+	text-align:center;
+	border-radius:20px 20px 20px 20px;
+	padding-top:10px;
+	padding-left:100px;
+	padding-right:150px;
+}
+
+#ico-1{
+	font-size:48px;
+	color:white;
+}
+
+#ico-2{
+	font-size:48px;
+	color:blue;
+}
+
+/*for small screens*/
+
+@media only screen and (max-width:720px){
+	body{
+	overflow-y:scroll;
+	width:100%;
+	margin:auto;
+}
+	table{
+	background-color:#263031;
+	width:360px;
+	height:300px;
+	margin:auto;
+	border-radius:10px 30px 10px 30px;
+	box-shadow:1px 2px 20px 10px white;
+}
+	.navbar {
+	overflow: hidden;
+	background-color: black;
+	padding: 0px 0px 0px 0px;
+}
+
+	.nav {
+	overflow: hidden;
+	background-color: black;
+	padding: 0px 0px 0px 0px;
+}
+
+	.navbar a{
+	float: right;
+	font-size: 16px;
+	color: white;
+	text-align: center;
+	padding: 10px 10px;
+	text-decoration: none;
+}
+
+	.nav a{
+	float: right;
+	font-size: 16px;
+	color: white;
+	text-align: center;
+	padding: 10px 10px;
+	text-decoration: none;
+}
+	.navbar a:hover{
+	background-color: gray;
+}
+    .nav a:hover{
+	background-color: gray;
+}
+	.navbar a.active {
+	background-color: white;
+	color: black;
+	font-weight:bold;
+}
+	#dv{
+	padding-top:100px;
+	padding-bottom:80px;
+	padding-left:0px;
+	padding-right:0px;
+}
+	#navbar-placeholder{
+	position:fixed;
+	width:100%;
+}
+	th{
+	color:gold;
+	font-size:x-large;
+	height:50px;
+	text-align:center;
+	text-decoration:underline;
+}
+
+	td{
+	color: white;
+	width:400px;
+	height:90px;
+	text-align:center;
+}
+	#sbm{
+	background-color:green;
+	color:white;
+	width:80px;
+	height:35px;
+	font-size:20px;
+	font-weight:bold;
+	text-shadow:1px 1px black;
+	border-radius:8px 8px 8px 8px;
+	border:1px solid green;
+}
+	.box{
+	border:0px solid white;
+	border-radius:8px 8px 8px 8px;
+	width:210px;
+	height:40px;
+}
+	textarea{
+	width:210px;
+	height:90px;
+	border:0px solid white;
+	border-radius:8px 8px 8px 8px;
+}
+}
